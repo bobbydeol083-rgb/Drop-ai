@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "@drop-ai/assets": "0.1.0",
+    "@drop-ai/common": "0.1.0",
+    "@drop-ai/knowledge": "0.1.0",
+    "@drop-ai/storage": "0.1.0",
+    "electron-updater": "^6.1.8",
+    "unzipper": "^0.12.5",
+    "ws": "^8.18.0"
+  },
+  "description": "Drop AI desktop launcher (Electron). Copyright by Dork Industry.",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "description": "Drop AI desktop launcher (Electron). Copyright by Dork Industry.",
+  "main": "main.js",
+  "name": "@drop-ai/launcher",
+  "private": true,
+  "scripts": {
+    "dev": "electron .",
+    "start": "electron ."
+  },
+  "type": "module",
+  "version": "3.0.35"
+}

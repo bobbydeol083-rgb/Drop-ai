@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self' https://mcpagent.cloud; img-src 'self' https://mcpagent.cloud data: blob:" />
+  <title>Drop AI</title>
+  <meta name="app-version" content="3.0.21" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar menubar">
+    <div class="brand">
+      <img class="brand-logo" src="../assets/logo.png" alt="Drop AI logo" aria-hidden="true">
+      <h1>Drop AI</h1>
+    </div>
+    <div class="topbar-actions">
+      <button id="btn-update" class="btn-update hidden" type="button">Update →</button>
+      <button id="theme-toggle" class="theme-toggle" type="button" title="Toggle dark / light theme" aria-label="Toggle dark / light theme">◐</button>
+      <div id="global-pill" class="pill pill-stopped"><span class="pill-dot"></span><span id="global-pill-text">Stopped</span></div>
+      <div id="profile-avatar" class="profile-avatar" title="Profile"><span id="profile-initial">?</span></div>
+    </div>
+  </header>
+
+  <aside class="sidebar" aria-label="Quick actions">
+    <button id="btn-sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Collapse sidebar" aria-expanded="true">☰</button>
+    <button id="btn-upgrade-top" class="btn-upgrade-sidebar" type="button"><span class="sidebar-ico">⚡</span><span class="sidebar-label">Upgrade</span></button>
+    <nav class="sidebar-nav">
+      <button id="btn-new-chat" class="sidebar-item" type="button"><span class="sidebar-ico">💬</span><span class="sidebar-label">New chat</span></button>
+      <button id="btn-open-settings" class="sidebar-item" type="button"><span class="sidebar-ico">⚙️</span><span class="sidebar-label">Settings</span></button>
+    </nav>
+    <div id="plan-badge-wrap" class="plan-badge-wrap hidden" title="Your plan">
+      <div id="plan-badge-anim" class="plan-badge-anim" aria-hidden="true"></div>
+      <span id="plan-badge-label" class="plan-badge-label">TRIAL</span>
+    </div>
+  </aside>
+
+  <main class="wrap">
+    <section id="screen-overview" class="screen" data-screen-panel="overview">
+    <section id="home-banner" class="home-banner hidden" aria-label="Announcements">
+      <div class="home-banner-viewport">
+        <div id="home-banner-slides" class="home-banner-slides"></div>
+      </div>
+      <button id="home-banner-prev" class="home-banner-arrow home-banner-prev hidden" type="button" aria-label="Previous announcement">‹</button>
+      <button id="home-banner-next" class="home-banner-arrow home-banner-next hidden" type="button" aria-label="Next announcement">›</button>
+      <div id="home-banner-dots" class="home-banner-dots" aria-label="Announcements"></div>
+    </section>
+    <section id="ready-banner" class="ready-banner hidden" role="status">
+      <span class="ready-check" aria-hidden="true">✓</span>
+      <div>
+        <strong>READY</strong>
+        <span>Relay, Premiere Pro and the MCP server are all connected.</span>
+      </div>
+    </section>
+
+    <section class="status-grid" aria-label="Service status">
+      <article class="card status-card">
+        <div class="status-head">
+          <span id="dot-relay" class="dot dot-stopped"></span>
+          <h2>Relay</h2>
+        </div>
+        <p id="detail-relay" class="detail">not running</p>
+        <p class="meta">WebSocket bridge · <span id="relay-port">port 3040</span></p>
+      </article>
+      <article class="card status-card">
+        <div class="status-head">
+          <span id="dot-premiere" class="dot dot-stopped"></span>
+          <h2>Premiere Pro</h2>
+        </div>
+        <p id="detail-premiere" class="detail">not running</p>
+        <p class="meta">via the Drop AI CEP panel</p>
+      </article>
+      <article class="card status-card">
+        <div class="status-head">
+          <span id="dot-mcp" class="dot dot-stopped"></span>
+          <h2>MCP server</h2>
+        </div>
+        <p id="detail-mcp" class="detail">not running</p>
+        <p class="meta">stdio · supervised child process</p>
+      </article>
+    </section>
+
+    <section class="card controls-card">
+      <div class="controls">
+        <button id="btn-start" class="btn btn-primary">Start</button>
+        <button id="btn-stop" class="btn">Stop</button>
+        <button id="btn-retry" class="btn">Retry</button>
+      </div>
+      <p id="premiere-install" class="install-line">Checking for Premiere Pro…</p>
+      <div id="cep-panels-list" class="cep-panels-list">
+        <!-- Populated by JS: one row per available CEP panel (Premiere, Animate, AE…) -->
+      </div>
+    </section>
+
+    <section class="card plugins-card" aria-label="Plugins">
+      <div class="card-head">
+        <h2>Plugins</h2>
+        <div class="row-actions">
+          <button id="btn-plugin-install" class="btn btn-small" type="button">Install plugin…</button>
+          <button id="btn-plugin-refresh" class="btn btn-small" type="button">Refresh</button>
+        </div>
+      </div>
+      <p class="dropzone-sub">Host-app plugins extend Drop AI with new panels, tools and asset types. Install a <code>.dropai-plugin</code> file to add one. Built-in plugins ship with the app and cannot be removed.</p>
+      <table class="table" aria-label="Installed plugins">
+        <thead>
+          <tr><th scope="col">Plugin</th><th scope="col">Version</th><th scope="col">Host</th><th scope="col" class="th-actions">Actions</th></tr>
+        </thead>
+        <tbody id="plugin-tbody">
+          <tr><td colspan="4" class="table-empty">Loading…</td></tr>
+        </tbody>
+      </table>
+      <p id="plugin-note" class="note" role="status"></p>
+    </section>
+
+    <section class="card connect-card">
+      <div class="card-head">
+        <h2>Connect an AI client</h2>
+        <button id="btn-connect-refresh" class="btn btn-small" type="button">Refresh</button>
+      </div>
+      <p class="dropzone-sub">One click connects Drop AI to your AI app — no config files, no terminal.</p>
+      <div id="connect-client-list" class="connect-client-list" aria-live="polite">
+        <p class="table-empty">Detecting installed AI clients…</p>
+      </div>
+      <div id="tunnel-box" class="tunnel-box hidden">
+        <div class="tunnel-head">
+          <span id="tunnel-status"></span>
+          <span class="tunnel-hint">Keep the launcher running while you use ChatGPT.</span>
+        </div>
+        <code id="tunnel-url" class="tunnel-url"></code>
+      </div>
+      <p id="connect-note" class="note" role="status"></p>
+    </section>
+
+    <div class="two-col">
+      <section class="card log-card">
+        <div class="card-head">
+          <h2>Status</h2>
+          <button id="btn-log-details" class="btn btn-small" type="button">Details</button>
+        </div>
+        <div id="simple-status" class="simple-status" aria-live="polite">
+          <div class="simple-status-row">
+            <span id="ss-dot" class="dot dot-stopped"></span>
+            <span id="ss-text" class="simple-status-text">Disconnected</span>
+          </div>
+          <p id="ss-sub" class="simple-status-sub">Press Start to connect the relay, Premiere Pro panel, and MCP server.</p>
+        </div>
+        <div id="log-details-wrap" class="hidden">
+          <pre id="log-view" aria-live="polite"></pre>
+          <div class="token-actions" style="margin-top: 10px;">
+            <button id="btn-clear-logs" class="btn btn-small">Clear logs</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card token-card">
+        <div class="card-head">
+          <h2>API token</h2>
+        </div>
+        <p class="token-sub">Unlocks the remote MCP transport below. Keep it secret — it grants full Premiere Pro control.</p>
+        <code id="token-value" class="token-value">••••••••</code>
+        <div class="token-actions">
+          <button id="btn-token-copy" class="btn btn-small">Copy</button>
+          <button id="btn-token-reveal" class="btn btn-small">Reveal</button>
+          <button id="btn-token-rotate" class="btn btn-small btn-danger-ghost">Rotate</button>
+        </div>
+        <p id="token-note" class="token-note">Masked by default. Reveal hides itself again after 10&nbsp;s.</p>
+        <div class="http-remote">
+          <div class="http-remote-head">
+            <h3>Remote server</h3>
+            <span id="http-dot" class="dot dot-stopped" aria-hidden="true"></span>
+          </div>
+          <code id="http-url" class="http-url">http://127.0.0.1:3100/mcp</code>
+          <div class="token-actions">
+            <button id="btn-http-toggle" class="btn btn-small btn-primary" type="button">Start remote server</button>
+          </div>
+          <div id="tunnel-url-box" class="tunnel-url-box hidden">
+            <div class="tunnel-url-label">Public URL — paste into Claude / ChatGPT / any LLM:</div>
+            <div class="tunnel-url-row">
+              <code id="tunnel-public-url" class="http-url tunnel-public-url"></code>
+              <button id="btn-tunnel-copy" class="btn btn-small btn-primary" type="button">Copy</button>
+            </div>
+          </div>
+          <p id="http-note" class="token-note">One click starts the server and a secure tunnel. Copy the public URL above into your LLM's MCP settings.</p>
+        </div>
+      </section>
+    </div>
+    </section>
+
+    <section id="screen-chat" class="screen hidden" data-screen-panel="chat" aria-label="AI Chat">
+      <div class="aichat">
+        <div class="aichat-main">
+          <div class="aichat-topbar">
+            <h2>AI Chat</h2>
+            <div class="aichat-topbar-actions">
+              <button id="btn-chat-upgrade" class="aichat-upgrade" type="button">⚡ Upgrade</button>
+              <button class="aichat-iconbtn" type="button" title="Help" aria-label="Help">?</button>
+              <button class="aichat-iconbtn" type="button" title="Rewards" aria-label="Rewards">🎁</button>
+              <button class="aichat-iconbtn" type="button" title="Assistant" aria-label="Assistant">🤖</button>
+            </div>
+          </div>
+          <div class="aichat-body">
+            <div id="aichat-welcome" class="aichat-welcome">
+              <h1>Welcome to Drop AI</h1>
+              <p class="aichat-sub">Get started by giving a task and Chat can do the rest. Not sure where to start?</p>
+              <div class="aichat-video-wrap">
+                <span class="aichat-video-glow">
+                  <button id="btn-aichat-video" class="aichat-video-btn" type="button">🎬 Generate video with AI</button>
+                </span>
+              </div>
+            </div>
+            <div id="aichat-messages" class="aichat-messages hidden" aria-live="polite"></div>
+            <div class="aichat-composer">
+              <div id="aichat-attach-chips" class="aichat-chips" aria-live="polite"></div>
+              <div class="aichat-inputrow">
+                <input id="aichat-input" class="aichat-input" type="text" placeholder="Ask anything…" maxlength="3000" autocomplete="off" />
+                <button id="btn-aichat-send" class="aichat-send" type="button" aria-label="Send">➤</button>
+              </div>
+              <div class="aichat-toolbar">
+                <button class="aichat-tool" type="button" id="btn-aichat-attach">📎 Attach</button>
+                <button class="aichat-tool" type="button" id="btn-aichat-voice">🎙 Voice Message</button>
+                <button class="aichat-tool" type="button" id="btn-aichat-prompts">🗂 Browse Prompts</button>
+                <span id="aichat-count" class="aichat-count">0 / 3,000</span>
+              </div>
+              <p id="aichat-note" class="note" role="status"></p>
+            </div>
+            <p class="aichat-disclaimer">Drop AI may generate inaccurate information about people, places, or facts.</p>
+          </div>
+        </div>
+        <aside class="aichat-side" aria-label="Projects">
+          <div class="aichat-side-head"><h3 id="aichat-projects-title">Projects</h3><button class="aichat-iconbtn" type="button" aria-label="More">⋯</button></div>
+          <button class="aichat-newproject" type="button" id="btn-aichat-newproject"><strong>New Project</strong><span>—</span></button>
+          <div id="aichat-projects" class="aichat-projects" aria-live="polite">
+            <p class="table-empty">Loading…</p>
+          </div>
+          <button class="aichat-fab" type="button" aria-label="New chat" id="btn-aichat-fab">◉</button>
+        </aside>
+      </div>
+    </section>
+
+    <section id="screen-knowledge" class="screen hidden" data-screen-panel="knowledge" aria-label="Knowledge">
+      <section class="card">
+        <div class="card-head">
+          <h2>Rulebooks &amp; knowledge</h2>
+          <div class="row-actions">
+            <button id="btn-kb-watchdir" class="btn btn-small" type="button" title="Open the Knowledge folder — drop .md/.pdf files there and they're added automatically">Knowledge folder</button>
+            <button id="btn-kb-scan" class="btn btn-small" type="button" title="Manually scan the Knowledge folder for new files">Scan folder</button>
+            <button id="btn-kb-upload" class="btn btn-small" type="button">Upload rulebook</button>
+            <button id="btn-kb-reindex" class="btn btn-small" type="button">Reindex</button>
+            <button id="btn-kb-removeall" class="btn btn-small btn-danger-ghost" type="button">Remove all</button>
+          </div>
+        </div>
+        <div class="kb-toggles">
+          <label class="toggle-row">
+            <input type="checkbox" id="chk-kb-seed" checked />
+            <span>Include preset guides (editing psychology, transitions, Premiere API)</span>
+          </label>
+          <p class="kb-watch-hint" id="kb-watch-hint">Drop files into the Knowledge folder and they appear here automatically.</p>
+        </div>
+        <div id="kb-dropzone" class="dropzone" aria-label="Drop documents here">
+          <p><strong>Drop .md or .pdf files here</strong> or use Upload rulebook</p>
+          <p class="dropzone-sub">Rulebooks are chunked, embedded locally and searchable. You can select multiple files.</p>
+        </div>
+        <div id="kb-ingest-progress-wrap" class="progress-wrap hidden">
+          <div class="progress-bar" role="progressbar" aria-label="Background ingestion progress">
+            <div id="kb-ingest-progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="kb-ingest-progress-label" class="progress-label"></p>
+        </div>
+        <div id="kb-progress-wrap" class="progress-wrap hidden">
+          <div class="progress-bar" role="progressbar" aria-label="Reindex progress">
+            <div id="kb-progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="kb-progress-label" class="progress-label"></p>
+        </div>
+        <table class="table" aria-label="Knowledge sources">
+          <thead>
+            <tr><th scope="col">Source</th><th scope="col">Title</th><th scope="col">Chunks</th><th scope="col" class="th-actions">Actions</th></tr>
+          </thead>
+          <tbody id="kb-tbody">
+            <tr><td colspan="4" class="table-empty">Loading…</td></tr>
+          </tbody>
+        </table>
+        <p id="kb-note" class="note" role="status"></p>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Test search</h2>
+        </div>
+        <div class="search-row">
+          <input id="kb-search-input" class="input" type="text" placeholder="e.g. how do I add a LUT to a clip?" maxlength="500" />
+          <button id="btn-kb-search" class="btn btn-primary btn-small" type="button">Search</button>
+        </div>
+        <ul id="kb-results" class="results" aria-live="polite"></ul>
+      </section>
+    </section>
+
+    <section id="screen-assets" class="screen hidden" data-screen-panel="assets" aria-label="Assets">
+      <section class="card">
+        <div class="card-head">
+          <h2>Assets</h2>
+          <button id="btn-asset-add" class="btn btn-primary btn-small" type="button">Add asset</button>
+        </div>
+        <div class="search-row">
+          <input id="asset-search-input" class="input" type="text" placeholder="Search assets by name, tag or description…" maxlength="200" />
+        </div>
+        <div id="asset-grid" class="asset-grid" aria-live="polite"></div>
+        <p id="asset-note" class="note" role="status"></p>
+      </section>
+    </section>
+
+    <section id="screen-reference" class="screen hidden" data-screen-panel="reference" aria-label="Reference">
+      <section class="card">
+        <div class="card-head">
+          <h2>Reference video</h2>
+          <div class="row-actions">
+            <button id="btn-ref-pick" class="btn btn-primary btn-small" type="button">Select video &amp; analyze</button>
+          </div>
+        </div>
+        <p class="dropzone-sub">Reverse-engineer a reference video into a single <strong>.drop</strong> bundle: shot pacing, transition types, an embedded look-matching LUT and audio analysis — packed in one file, with each component individually usable.</p>
+        <div id="ref-progress-wrap" class="progress-wrap hidden">
+          <div class="progress-bar" role="progressbar" aria-label="Reference analysis progress">
+            <div id="ref-progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="ref-progress-label" class="progress-label"></p>
+        </div>
+        <div id="ref-result" class="hidden" aria-live="polite"></div>
+        <p id="ref-note" class="note" role="status"></p>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Deconstructed references</h2>
+          <div class="row-actions">
+            <button id="btn-ref-refresh" class="btn btn-small" type="button">Refresh</button>
+          </div>
+        </div>
+        <div id="ref-bundles" class="bundle-list" aria-live="polite">
+          <p class="table-empty">Loading…</p>
+        </div>
+      </section>
+    </section>
+
+    <section id="screen-library" class="screen hidden" data-screen-panel="library" aria-label="Library">
+      <section class="card">
+        <div class="card-head">
+          <h2>Preset library</h2>
+          <div class="row-actions">
+            <select id="lib-host-filter" class="input" aria-label="Filter presets by host app">
+              <option value="">All hosts</option>
+            </select>
+            <span id="lib-status" class="pill">checking…</span>
+            <button id="btn-lib-refresh" class="btn btn-small" type="button">Refresh</button>
+          </div>
+        </div>
+        <p class="dropzone-sub">Download presets from the cloud — transitions, effects, caption styles, music, LUTs and more. Filters are controlled from the backend.</p>
+        <div class="lib-search-row">
+          <input id="lib-search" type="search" placeholder="Search presets…" aria-label="Search presets" />
+        </div>
+        <div id="lib-filters" class="chip-row" role="tablist" aria-label="Preset filters"></div>
+        <div id="lib-count-header" class="lib-count-header"></div>
+        <div id="lib-grid" class="preset-grid" aria-live="polite"></div>
+        <p id="lib-note" class="note" role="status"></p>
+      </section>
+    </section>
+
+    <section id="screen-settings" class="screen hidden" data-screen-panel="settings" aria-label="Settings">
+      <section class="card settings-page-card">
+        <div class="card-head">
+          <h2>Settings</h2>
+        </div>
+        <div class="settings-row"><span>App version</span><span id="settings-version" class="muted">…</span></div>
+        <div class="settings-row settings-row-col">
+          <div class="settings-profile">
+            <div id="settings-avatar" class="settings-avatar" aria-hidden="true"><span id="settings-avatar-initial">?</span></div>
+            <div class="settings-profile-fields">
+              <label for="settings-name">Profile name</label>
+              <input id="settings-name" class="input" type="text" maxlength="120" placeholder="Your name" autocomplete="name" />
+            </div>
+          </div>
+          <div class="settings-profile-actions">
+            <button id="btn-save-profile" class="btn btn-small btn-primary" type="button">Save</button>
+            <button id="btn-edit-avatar" class="btn btn-small" type="button">Upload picture</button>
+          </div>
+          <p id="settings-profile-note" class="note" role="status"></p>
+        </div>
+        <div class="settings-row"><span>Privacy policy</span><button id="btn-privacy" class="btn btn-small btn-ghost" type="button">View</button></div>
+        <div class="settings-row"><span>Terms of service</span><button id="btn-terms" class="btn btn-small btn-ghost" type="button">View</button></div>
+        <div class="settings-row"><span>Sign out</span><button id="btn-logout" class="btn btn-small" type="button">Logout</button></div>
+      </section>
+    </section>
+
+    <section id="screen-upgrade" class="screen hidden" data-screen-panel="upgrade" aria-label="Plans">
+      <section class="card">
+        <div class="card-head">
+          <h2>Choose your plan</h2>
+        </div>
+        <p class="dropzone-sub">Plans are billed monthly via Razorpay. After payment, our team reviews your account and unlocks AI chat.</p>
+        <div id="upgrade-plans" class="sub-plans" aria-live="polite">
+          <p class="muted">Loading plans…</p>
+        </div>
+        <p id="upgrade-note" class="note" role="status"></p>
+      </section>
+    </section>
+
+  </main>
+
+  <!-- Paywall lock overlay: shown when trial expires. Background blurs, plans shown. -->
+  <div id="paywall-overlay" class="paywall-overlay hidden" role="dialog" aria-modal="true" aria-label="Subscription required">
+    <div class="paywall-card">
+      <div class="paywall-icon">🔒</div>
+      <h2>Your trial has ended</h2>
+      <p class="paywall-sub">Choose a plan to continue using Drop AI.</p>
+      <div id="paywall-plans" class="paywall-plans" aria-live="polite">
+        <p class="muted">Loading plans…</p>
+      </div>
+      <p id="paywall-note" class="note" role="status"></p>
+    </div>
+  </div>
+
+  <footer class="footer">Copyright by Dork Industry</footer>
+
+  <div id="asset-modal" class="modal-overlay hidden">
+    <div class="modal card" role="dialog" aria-modal="true" aria-labelledby="asset-modal-title">
+      <div class="card-head">
+        <h2 id="asset-modal-title">Add asset</h2>
+        <button class="btn btn-small" data-close-modal type="button">✕</button>
+      </div>
+      <div class="field">
+        <label for="asset-type">Type</label>
+        <select id="asset-type" class="input">
+          <option value="mogrt">Motion Graphics template (.mogrt)</option>
+          <option value="lut">LUT (.cube)</option>
+          <option value="broll">B-roll footage</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="asset-tags">Tags <span class="field-hint">comma-separated</span></label>
+        <input id="asset-tags" class="input" type="text" placeholder="lower-third, intro, blue" maxlength="300" />
+      </div>
+      <div class="field">
+        <label for="asset-desc">Description</label>
+        <textarea id="asset-desc" class="input" rows="3" maxlength="500" placeholder="What is this asset for?"></textarea>
+      </div>
+      <p id="asset-modal-note" class="note" role="status"></p>
+      <div class="modal-actions">
+        <button class="btn btn-small" data-close-modal type="button">Cancel</button>
+        <button id="btn-asset-pick" class="btn btn-primary btn-small" type="button">Choose file &amp; add…</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="place-modal" class="modal-overlay hidden">
+    <div class="modal card" role="dialog" aria-modal="true" aria-labelledby="place-modal-title">
+      <div class="card-head">
+        <h2 id="place-modal-title">Place asset</h2>
+        <button class="btn btn-small" data-close-modal type="button">✕</button>
+      </div>
+      <p id="place-asset-name" class="detail"></p>
+      <div class="field">
+        <label for="place-track-type">Track type</label>
+        <select id="place-track-type" class="input">
+          <option value="video">Video</option>
+          <option value="audio">Audio</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="place-track-index">Track index <span class="field-hint">0 = V1 / A1</span></label>
+        <input id="place-track-index" class="input" type="number" min="0" max="99" value="0" />
+      </div>
+      <div class="field">
+        <label for="place-timecode">Position timecode</label>
+        <input id="place-timecode" class="input" type="text" placeholder="HH:MM:SS:FF" maxlength="13" />
+      </div>
+      <div class="field">
+        <label for="place-clip-name">Clip name <span class="field-hint" id="place-clip-hint">required for LUT assets</span></label>
+        <input id="place-clip-name" class="input" type="text" maxlength="120" placeholder="Name for the placed clip" />
+      </div>
+      <p id="place-note" class="note" role="status"></p>
+      <div class="modal-actions">
+        <button class="btn btn-small" data-close-modal type="button">Cancel</button>
+        <button id="btn-place-confirm" class="btn btn-primary btn-small" type="button">Place on timeline</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="legal-modal" class="settings-modal hidden" role="dialog" aria-label="Legal">
+    <div class="settings-card legal-card">
+      <h2 id="legal-title">Privacy Policy</h2>
+      <div id="legal-body" class="legal-body"></div>
+      <div style="margin-top:20px;text-align:right"><button id="btn-legal-close" class="btn" type="button">Close</button></div>
+    </div>
+  </div>
+  <script src="vendor/lottie.min.js"></script>
+  <script src="renderer.js"></script>
+  <nav class="dock" aria-label="Screens">
+    <button class="dock-item dock-active" data-screen="overview" type="button" title="Dashboard"><span class="dock-ico">◉</span><span class="dock-label">Dashboard</span></button>
+    <button class="dock-item" data-screen="knowledge" type="button" title="Knowledge"><span class="dock-ico">✦</span><span class="dock-label">Knowledge</span></button>
+    <button class="dock-item" data-screen="assets" type="button" title="Assets"><span class="dock-ico">▣</span><span class="dock-label">Assets</span></button>
+    <button class="dock-item" data-screen="reference" type="button" title="Reference"><span class="dock-ico">◈</span><span class="dock-label">Reference</span></button>
+    <button class="dock-item" data-screen="library" type="button" title="Library"><span class="dock-ico">⬡</span><span class="dock-label">Library</span></button>
+    <button class="dock-item" data-screen="upgrade" type="button" title="Plans"><span class="dock-ico">⚡</span><span class="dock-label">Plans</span></button>
+    <button class="dock-item" data-screen="settings" type="button" title="Settings"><span class="dock-ico">⚙</span><span class="dock-label">Settings</span></button>
+  </nav>
+</body>
+</html>
