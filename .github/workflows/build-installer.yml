@@ -9,9 +9,6 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: packages/launcher
     steps:
       - uses: actions/checkout@v4
 
@@ -19,8 +16,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: packages/launcher/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -34,5 +29,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Drop-AI-Setup
-          path: packages/launcher/dist-installer/*.exe
+          path: dist-installer/*.exe
           retention-days: 30
