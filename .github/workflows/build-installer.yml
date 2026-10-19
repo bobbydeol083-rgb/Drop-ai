@@ -1,9 +1,6 @@
 name: Build Windows Installer
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -18,11 +15,11 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
-
+        run: npm install --workspaces
 
       - name: Build installer
         run: npx electron-builder --win nsis --publish never
+        working-directory: packages/launcher
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -30,5 +27,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Drop-AI-Setup
-          path: dist-installer/*.exe
+          path: packages/launcher/dist-installer/*.exe
           retention-days: 30
